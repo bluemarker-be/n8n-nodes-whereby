@@ -21,10 +21,8 @@
     "url": "https://github.com/henkdeblauw/n8n-nodes-whereby.git"
   },
   "engines": {
-    "node": ">=18.10",
-    "pnpm": ">=9.1"
+    "node": ">=18.10"
   },
-  "packageManager": "pnpm@9.1.0",
   "main": "index.js",
   "scripts": {
     "build": "tsc && gulp build:icons",
