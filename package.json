@@ -11,14 +11,14 @@
     "api"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/henkdeblauw/n8n-node-whereby",
+  "homepage": "https://github.com/henkdeblauw/n8n-nodes-whereby",
   "author": {
     "name": "Henk de Blauw",
     "email": "your-email@example.com"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/henkdeblauw/n8n-node-whereby.git"
+    "url": "https://github.com/henkdeblauw/n8n-nodes-whereby.git"
   },
   "engines": {
     "node": ">=18.10",
@@ -30,8 +30,8 @@
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
-    "lint": "eslint nodes credentials package.json",
-    "lintfix": "eslint nodes credentials package.json --fix",
+    "lint": "eslint nodes credentials",
+    "lintfix": "eslint nodes credentials --fix",
     "prepublishOnly": "npm run build && npm run lint -s"
   },
   "files": [
@@ -47,6 +47,7 @@
     ]
   },
   "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.15.0",
     "eslint": "^8.56.0",
     "eslint-plugin-n8n-nodes-base": "^1.16.1",
