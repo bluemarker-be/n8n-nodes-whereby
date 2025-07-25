@@ -20,7 +20,7 @@ This is an n8n community node for the [Whereby](https://whereby.com) video confe
 
 1. Get your Whereby API key from [Whereby Developer Dashboard](https://whereby.dev)
 2. In n8n, create a new "Whereby API" credential
-3. Enter your API key (Bearer token)
+3. Enter your API key
 
 ## API Reference
 
