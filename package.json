@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-whereby",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "n8n community node for Whereby video conferencing API",
   "keywords": [
     "n8n-community-node-package",
@@ -14,7 +14,8 @@
   "homepage": "https://github.com/henkdeblauw/n8n-nodes-whereby",
   "author": {
     "name": "Henk de Blauw",
-    "email": "your-email@example.com"
+    "email": "henk@operative.pro",
+    "website": "https://www.operative.pro"
   },
   "repository": {
     "type": "git",
@@ -45,6 +46,7 @@
     ]
   },
   "devDependencies": {
+    "@types/node": "^24.1.0",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.15.0",
     "eslint": "^8.56.0",

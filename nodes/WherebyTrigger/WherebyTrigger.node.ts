@@ -5,9 +5,10 @@ import {
 	INodeTypeDescription,
 	IDataObject,
 	NodeOperationError,
+	NodeConnectionType,
 } from 'n8n-workflow';
 
-import * as crypto from 'crypto';
+import { createHmac } from 'crypto';
 
 export class WherebyTrigger implements INodeType {
 	description: INodeTypeDescription = {
@@ -22,7 +23,7 @@ export class WherebyTrigger implements INodeType {
 			name: 'Whereby Trigger',
 		},
 		inputs: [],
-		outputs: ['main'],
+		outputs: [NodeConnectionType.Main],
 		credentials: [
 			{
 				name: 'wherebyApi',
@@ -175,8 +176,7 @@ export class WherebyTrigger implements INodeType {
 
 			// Whereby uses HMAC-SHA256 for signatures
 			const body = JSON.stringify(bodyData);
-			const expectedSignature = crypto
-				.createHmac('sha256', signatureSecret)
+			const expectedSignature = createHmac('sha256', signatureSecret)
 				.update(body)
 				.digest('hex');
 
