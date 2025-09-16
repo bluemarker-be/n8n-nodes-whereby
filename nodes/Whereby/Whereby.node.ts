@@ -174,11 +174,31 @@ export class Whereby implements INodeType {
 						description: 'Whether the room should be locked initially',
 					},
 					{
+						displayName: 'Room Mode',
+						name: 'roomMode',
+						type: 'options',
+						options: [
+							{
+								name: 'Normal',
+								value: 'normal',
+								description: 'Standard meeting room',
+							},
+							{
+								name: 'Group',
+								value: 'group',
+								description: 'Group meeting with enhanced features',
+							},
+						],
+						default: 'normal',
+						description: 'The mode of the meeting room',
+					},
+					{
 						displayName: 'Room Name Prefix',
 						name: 'roomNamePrefix',
 						type: 'string',
 						default: '',
-						description: 'Prefix for the room name',
+						description: 'Prefix for the room name (max 39 characters, alphanumeric only)',
+						placeholder: 'mycompany',
 					},
 					{
 						displayName: 'Room Name Pattern',
@@ -188,14 +208,280 @@ export class Whereby implements INodeType {
 							{
 								name: 'UUID',
 								value: 'uuid',
+								description: 'Generate UUID-based room names',
 							},
 							{
 								name: 'Human Short',
 								value: 'human-short',
+								description: 'Generate human-readable short names',
 							},
 						],
 						default: 'uuid',
 						description: 'Pattern for generating room names',
+					},
+					{
+						displayName: 'Template Type',
+						name: 'templateType',
+						type: 'options',
+						options: [
+							{
+								name: 'Viewer Mode',
+								value: 'viewerMode',
+								description: 'Enable viewer mode template',
+							},
+						],
+						default: 'viewerMode',
+						description: 'Template type for the meeting room',
+					},
+					{
+						displayName: 'Response Fields',
+						name: 'fields',
+						type: 'multiOptions',
+						options: [
+							{
+								name: 'Host Room URL',
+								value: 'hostRoomUrl',
+								description: 'Include host-specific room URL in response',
+							},
+							{
+								name: 'Viewer Room URL',
+								value: 'viewerRoomUrl',
+								description: 'Include viewer room URL in response',
+							},
+						],
+						default: [],
+						description: 'Additional fields to include in the API response',
+					},
+				],
+			},
+			{
+				displayName: 'Recording Settings',
+				name: 'recordingSettings',
+				type: 'collection',
+				placeholder: 'Add Recording Setting',
+				displayOptions: {
+					show: {
+						resource: ['meeting'],
+						operation: ['create'],
+					},
+				},
+				default: {},
+				description: 'Configure recording options for the meeting',
+				options: [
+					{
+						displayName: 'Recording Type',
+						name: 'type',
+						type: 'options',
+						options: [
+							{
+								name: 'None',
+								value: 'none',
+								description: 'No recording',
+							},
+							{
+								name: 'Local',
+								value: 'local',
+								description: 'Local recording on participant device',
+							},
+							{
+								name: 'Cloud',
+								value: 'cloud',
+								description: 'Cloud recording stored in Whereby',
+							},
+						],
+						default: 'none',
+						description: 'Type of recording to enable',
+					},
+					{
+						displayName: 'Start Trigger',
+						name: 'startTrigger',
+						type: 'options',
+						options: [
+							{
+								name: 'Use Organization Default',
+								value: '',
+								description: 'Use organization default settings',
+							},
+							{
+								name: 'None',
+								value: 'none',
+								description: 'Start recording manually via UI',
+							},
+							{
+								name: 'Prompt',
+								value: 'prompt',
+								description: 'Prompt first user with permission',
+							},
+							{
+								name: 'Automatic',
+								value: 'automatic',
+								description: 'Start automatically when first participant joins',
+							},
+							{
+								name: 'Automatic (2nd Participant)',
+								value: 'automatic-2nd-participant',
+								description: 'Start automatically when second participant joins',
+							},
+						],
+						default: '',
+						description: 'When to start recording',
+						displayOptions: {
+							show: {
+								type: ['local', 'cloud'],
+							},
+						},
+					},
+				],
+			},
+			{
+				displayName: 'Live Transcription Settings',
+				name: 'liveTranscriptionSettings',
+				type: 'collection',
+				placeholder: 'Add Transcription Setting',
+				displayOptions: {
+					show: {
+						resource: ['meeting'],
+						operation: ['create'],
+					},
+				},
+				default: {},
+				description: 'Configure live transcription options for the meeting',
+				options: [
+					{
+						displayName: 'Start Trigger',
+						name: 'startTrigger',
+						type: 'options',
+						options: [
+							{
+								name: 'Use Organization Default',
+								value: '',
+								description: 'Use organization default settings',
+							},
+							{
+								name: 'None',
+								value: 'none',
+								description: 'Transcription not available',
+							},
+							{
+								name: 'Manual',
+								value: 'manual',
+								description: 'Host can manually start/stop transcription',
+							},
+							{
+								name: 'Automatic',
+								value: 'automatic',
+								description: 'Start automatically when first participant joins',
+							},
+							{
+								name: 'Automatic (2nd Participant)',
+								value: 'automatic-2nd-participant',
+								description: 'Start automatically when second participant joins',
+							},
+						],
+						default: '',
+						description: 'When to start live transcription',
+					},
+					{
+						displayName: 'Language',
+						name: 'language',
+						type: 'options',
+						options: [
+							{ name: 'Catalan', value: 'ca' },
+							{ name: 'Chinese', value: 'zh' },
+							{ name: 'Chinese (Traditional)', value: 'zh-TW' },
+							{ name: 'Czech', value: 'cs' },
+							{ name: 'Danish', value: 'da' },
+							{ name: 'Dutch', value: 'nl' },
+							{ name: 'English', value: 'en' },
+							{ name: 'Finnish', value: 'fi' },
+							{ name: 'French', value: 'fr' },
+							{ name: 'German', value: 'de' },
+							{ name: 'German (Switzerland)', value: 'de-CH' },
+							{ name: 'Greek', value: 'el' },
+							{ name: 'Hindi', value: 'hi' },
+							{ name: 'Indonesian', value: 'id' },
+							{ name: 'Italian', value: 'it' },
+							{ name: 'Japanese', value: 'ja' },
+							{ name: 'Korean', value: 'ko' },
+							{ name: 'Latvian', value: 'lv' },
+							{ name: 'Malay', value: 'ms' },
+							{ name: 'Norwegian', value: 'no' },
+							{ name: 'Polish', value: 'pl' },
+							{ name: 'Portuguese', value: 'pt' },
+							{ name: 'Portuguese (Brazil)', value: 'pt-BR' },
+							{ name: 'Romanian', value: 'ro' },
+							{ name: 'Russian', value: 'ru' },
+							{ name: 'Slovak', value: 'sk' },
+							{ name: 'Spanish', value: 'es' },
+							{ name: 'Swedish', value: 'sv' },
+							{ name: 'Thai', value: 'th' },
+							{ name: 'Ukrainian', value: 'uk' },
+							{ name: 'Vietnamese', value: 'vi' },
+						],
+						default: 'en',
+						description: 'Language for transcription',
+						displayOptions: {
+							show: {
+								startTrigger: ['manual', 'automatic', 'automatic-2nd-participant'],
+							},
+						},
+					},
+					{
+						displayName: 'Live Captions',
+						name: 'liveCaptions',
+						type: 'boolean',
+						default: false,
+						description: 'Enable live captions during the meeting',
+						displayOptions: {
+							show: {
+								startTrigger: ['manual', 'automatic', 'automatic-2nd-participant'],
+							},
+						},
+					},
+				],
+			},
+			{
+				displayName: 'Streaming Settings',
+				name: 'streamingSettings',
+				type: 'collection',
+				placeholder: 'Add Streaming Setting',
+				displayOptions: {
+					show: {
+						resource: ['meeting'],
+						operation: ['create'],
+					},
+				},
+				default: {},
+				description: 'Configure streaming options for the meeting',
+				options: [
+					{
+						displayName: 'Start Trigger',
+						name: 'startTrigger',
+						type: 'options',
+						options: [
+							{
+								name: 'Use Organization Default',
+								value: '',
+								description: 'Use organization default settings',
+							},
+							{
+								name: 'None',
+								value: 'none',
+								description: 'Start/stop streaming manually',
+							},
+							{
+								name: 'Prompt',
+								value: 'prompt',
+								description: 'Host gets prompt to start streaming',
+							},
+							{
+								name: 'Automatic',
+								value: 'automatic',
+								description: 'Start automatically when first participant joins',
+							},
+						],
+						default: '',
+						description: 'When to start streaming',
 					},
 				],
 			},
@@ -261,12 +547,59 @@ export class Whereby implements INodeType {
 					if (operation === 'create') {
 						const endDate = this.getNodeParameter('endDate', i) as string;
 						const additionalFields = this.getNodeParameter('additionalFields', i);
+						const recordingSettings = this.getNodeParameter('recordingSettings', i, {}) as any;
+						const liveTranscriptionSettings = this.getNodeParameter('liveTranscriptionSettings', i, {}) as any;
+						const streamingSettings = this.getNodeParameter('streamingSettings', i, {}) as any;
 
 						const body: any = {
 							endDate,
 						};
 
+						// Add basic additional fields
 						Object.assign(body, additionalFields);
+
+						// Add recording settings if provided
+						if (Object.keys(recordingSettings).length > 0) {
+							body.recording = {
+								type: recordingSettings.type || 'none',
+								destination: null, // Always null as per API spec
+							};
+							
+							// Only add startTrigger if recording type is not 'none'
+							if (recordingSettings.type && recordingSettings.type !== 'none') {
+								body.recording.startTrigger = recordingSettings.startTrigger || null;
+							}
+						}
+
+						// Add live transcription settings if provided
+						if (Object.keys(liveTranscriptionSettings).length > 0) {
+							body.liveTranscription = {
+								destination: null, // Always null as per API spec
+							};
+							
+							if (liveTranscriptionSettings.startTrigger) {
+								body.liveTranscription.startTrigger = liveTranscriptionSettings.startTrigger === '' ? null : liveTranscriptionSettings.startTrigger;
+							}
+							
+							if (liveTranscriptionSettings.language) {
+								body.liveTranscription.language = liveTranscriptionSettings.language;
+							}
+							
+							if (liveTranscriptionSettings.liveCaptions !== undefined) {
+								body.liveTranscription.liveCaptions = liveTranscriptionSettings.liveCaptions;
+							}
+						}
+
+						// Add streaming settings if provided
+						if (Object.keys(streamingSettings).length > 0) {
+							body.streaming = {
+								destination: null, // Always null as per API spec
+							};
+							
+							if (streamingSettings.startTrigger) {
+								body.streaming.startTrigger = streamingSettings.startTrigger === '' ? null : streamingSettings.startTrigger;
+							}
+						}
 
 						const responseData = await wherebyApiRequest.call(this, 'POST', '/v1/meetings', body);
 						returnData.push({
