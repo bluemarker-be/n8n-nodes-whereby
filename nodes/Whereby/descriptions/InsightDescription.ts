@@ -43,7 +43,7 @@ export const insightOperations: INodeProperties[] = [
 
 export const insightFields: INodeProperties[] = [
 	// ----------------------------------
-	//         insight: getRooms
+	//         insight: shared pagination
 	// ----------------------------------
 	{
 		displayName: 'Return All',
@@ -73,9 +73,13 @@ export const insightFields: INodeProperties[] = [
 			minValue: 1,
 			maxValue: 100,
 		},
-		default: 50,
+		default: 10,
 		description: 'Max number of results to return',
 	},
+
+	// ----------------------------------
+	//         insight: getRooms
+	// ----------------------------------
 	{
 		displayName: 'Filters',
 		name: 'filters',
@@ -113,19 +117,10 @@ export const insightFields: INodeProperties[] = [
 			{
 				displayName: 'Sort By',
 				name: 'sortBy',
-				type: 'options',
-				options: [
-					{
-						name: 'Created At (Ascending)',
-						value: 'createdAt',
-					},
-					{
-						name: 'Created At (Descending)',
-						value: '-createdAt',
-					},
-				],
-				default: '-createdAt',
-				description: 'Sort order for rooms',
+				type: 'string',
+				default: '',
+				placeholder: 'totalSessions:asc',
+				description: 'Sort field and direction. Format: field:asc or field:desc.',
 			},
 		],
 	},
@@ -146,6 +141,36 @@ export const insightFields: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'The room name to get sessions for',
+	},
+	{
+		displayName: 'Filters',
+		name: 'filters',
+		type: 'collection',
+		placeholder: 'Add Filter',
+		displayOptions: {
+			show: {
+				resource: ['insight'],
+				operation: ['getRoomSessions'],
+			},
+		},
+		default: {},
+		options: [
+			{
+				displayName: 'Room Session ID',
+				name: 'roomSessionId',
+				type: 'string',
+				default: '',
+				description: 'Filter by a specific room session ID',
+			},
+			{
+				displayName: 'Sort By',
+				name: 'sortBy',
+				type: 'string',
+				default: '',
+				placeholder: 'totalUniqueParticipants:asc',
+				description: 'Sort field and direction. Format: field:asc or field:desc.',
+			},
+		],
 	},
 
 	// ----------------------------------
@@ -203,6 +228,29 @@ export const insightFields: INodeProperties[] = [
 		default: '',
 		required: true,
 		description: 'The external ID to look up participants',
+	},
+	{
+		displayName: 'Filters',
+		name: 'filters',
+		type: 'collection',
+		placeholder: 'Add Filter',
+		displayOptions: {
+			show: {
+				resource: ['insight'],
+				operation: ['getParticipants'],
+			},
+		},
+		default: {},
+		options: [
+			{
+				displayName: 'Sort By',
+				name: 'sortBy',
+				type: 'string',
+				default: '',
+				placeholder: 'joinedAt:asc',
+				description: 'Sort field and direction. Valid fields: joinedAt, leftAt. Format: field:asc or field:desc.',
+			},
+		],
 	},
 
 	// ----------------------------------

@@ -7,6 +7,12 @@ import {
 	NodeApiError,
 } from 'n8n-workflow';
 
+const MAX_RETRIES = 3;
+
+async function sleep(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function wherebyApiRequest(
 	this: IExecuteFunctions | ILoadOptionsFunctions,
 	method: IHttpRequestMethods,
@@ -30,15 +36,28 @@ export async function wherebyApiRequest(
 		delete options.qs;
 	}
 
-	try {
-		return await this.helpers.requestWithAuthentication.call(
-			this,
-			'wherebyApi',
-			options,
-		);
-	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as any);
+	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		try {
+			return await this.helpers.requestWithAuthentication.call(
+				this,
+				'wherebyApi',
+				options,
+			);
+		} catch (error: any) {
+			const statusCode = error?.statusCode || error?.httpCode || error?.code;
+
+			if (statusCode === 429 && attempt < MAX_RETRIES) {
+				const retryAfter = error?.response?.headers?.['retry-after'];
+				const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 1000 * (attempt + 1);
+				await sleep(waitMs);
+				continue;
+			}
+
+			throw new NodeApiError(this.getNode(), error as any);
+		}
 	}
+
+	throw new NodeApiError(this.getNode(), { message: 'Max retries exceeded' } as any);
 }
 
 export async function wherebyApiRequestAllItems(
@@ -87,10 +106,10 @@ export async function wherebyApiRequestMultipart(
 		method,
 		url: `https://api.whereby.dev${resource}`,
 		body: {
-			file: {
+			image: {
 				value: dataBuffer,
 				options: {
-					filename: binaryData.fileName || 'file.png',
+					filename: binaryData.fileName || 'image.png',
 					contentType: binaryData.mimeType || 'image/png',
 				},
 			},
@@ -101,13 +120,26 @@ export async function wherebyApiRequestMultipart(
 		json: true,
 	};
 
-	try {
-		return await this.helpers.requestWithAuthentication.call(
-			this,
-			'wherebyApi',
-			options,
-		);
-	} catch (error) {
-		throw new NodeApiError(this.getNode(), error as any);
+	for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+		try {
+			return await this.helpers.requestWithAuthentication.call(
+				this,
+				'wherebyApi',
+				options,
+			);
+		} catch (error: any) {
+			const statusCode = error?.statusCode || error?.httpCode || error?.code;
+
+			if (statusCode === 429 && attempt < MAX_RETRIES) {
+				const retryAfter = error?.response?.headers?.['retry-after'];
+				const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 1000 * (attempt + 1);
+				await sleep(waitMs);
+				continue;
+			}
+
+			throw new NodeApiError(this.getNode(), error as any);
+		}
 	}
+
+	throw new NodeApiError(this.getNode(), { message: 'Max retries exceeded' } as any);
 }

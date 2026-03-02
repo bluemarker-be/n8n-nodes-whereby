@@ -186,19 +186,10 @@ export const transcriptionFields: INodeProperties[] = [
 			{
 				displayName: 'Sort By',
 				name: 'sortBy',
-				type: 'options',
-				options: [
-					{
-						name: 'Created At (Ascending)',
-						value: 'createdAt',
-					},
-					{
-						name: 'Created At (Descending)',
-						value: '-createdAt',
-					},
-				],
-				default: '-createdAt',
-				description: 'Sort order for transcriptions',
+				type: 'string',
+				default: '',
+				placeholder: 'startDate:desc',
+				description: 'Sort field and direction. Valid fields: roomName, startDate, durationInSeconds. Format: field:asc or field:desc.',
 			},
 		],
 	},

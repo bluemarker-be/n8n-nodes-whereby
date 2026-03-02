@@ -378,7 +378,10 @@ export class Whereby implements INodeType {
 					if (operation === 'getRoomSessions') {
 						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 						const roomName = this.getNodeParameter('roomName', i) as string;
+						const filters = this.getNodeParameter('filters', i, {}) as any;
 						const qs: any = { roomName };
+						if (filters.roomSessionId) qs.roomSessionId = filters.roomSessionId;
+						if (filters.sortBy) qs.sortBy = filters.sortBy;
 
 						if (returnAll) {
 							const responseData = await wherebyApiRequestAllItems.call(this, 'GET', '/v1/insights/room-sessions', {}, qs);
@@ -395,12 +398,14 @@ export class Whereby implements INodeType {
 					if (operation === 'getParticipants') {
 						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 						const lookupBy = this.getNodeParameter('participantLookup', i) as string;
+						const filters = this.getNodeParameter('filters', i, {}) as any;
 						const qs: any = {};
 						if (lookupBy === 'roomSessionId') {
 							qs.roomSessionId = this.getNodeParameter('roomSessionId', i) as string;
 						} else {
 							qs.externalId = this.getNodeParameter('externalId', i) as string;
 						}
+						if (filters.sortBy) qs.sortBy = filters.sortBy;
 
 						if (returnAll) {
 							const responseData = await wherebyApiRequestAllItems.call(this, 'GET', '/v1/insights/participants', {}, qs);
