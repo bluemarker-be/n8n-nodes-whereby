@@ -31,12 +31,11 @@ export async function wherebyApiRequest(
 	}
 
 	try {
-		const responseData = await this.helpers.requestWithAuthentication.call(
+		return await this.helpers.requestWithAuthentication.call(
 			this,
 			'wherebyApi',
 			options,
 		);
-		return responseData;
 	} catch (error) {
 		throw new NodeApiError(this.getNode(), error as any);
 	}
@@ -52,32 +51,63 @@ export async function wherebyApiRequestAllItems(
 	const returnData: IDataObject[] = [];
 
 	let responseData;
-	let nextUrl: string | undefined;
+	const qs = { ...query };
 
 	do {
-		responseData = await wherebyApiRequest.call(this, method, endpoint, body, query);
-		
+		responseData = await wherebyApiRequest.call(this, method, endpoint, body, qs);
+
 		if (responseData.results) {
 			returnData.push(...responseData.results);
 		} else {
 			returnData.push(responseData);
+			break;
 		}
 
-		// Check if there's a next page
-		if (responseData.links && responseData.links.next) {
-			nextUrl = responseData.links.next;
-			// Simple next page handling - extract endpoint from next URL
-			const nextUrlObj = new (globalThis as any).URL(responseData.links.next);
-			endpoint = nextUrlObj.pathname;
-			const params = new (globalThis as any).URLSearchParams(nextUrlObj.search);
-			query = {};
-			for (const [key, value] of params) {
-				query[key] = value;
-			}
+		if (responseData.cursor) {
+			qs.cursor = responseData.cursor;
 		} else {
-			nextUrl = undefined;
+			break;
 		}
-	} while (nextUrl);
+	} while (true);
 
 	return returnData;
+}
+
+export async function wherebyApiRequestMultipart(
+	this: IExecuteFunctions,
+	method: IHttpRequestMethods,
+	resource: string,
+	binaryPropertyName: string,
+	itemIndex: number,
+): Promise<any> {
+	const binaryData = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
+	const dataBuffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
+
+	const options: IHttpRequestOptions = {
+		method,
+		url: `https://api.whereby.dev${resource}`,
+		body: {
+			file: {
+				value: dataBuffer,
+				options: {
+					filename: binaryData.fileName || 'file.png',
+					contentType: binaryData.mimeType || 'image/png',
+				},
+			},
+		},
+		headers: {
+			'Content-Type': 'multipart/form-data',
+		},
+		json: true,
+	};
+
+	try {
+		return await this.helpers.requestWithAuthentication.call(
+			this,
+			'wherebyApi',
+			options,
+		);
+	} catch (error) {
+		throw new NodeApiError(this.getNode(), error as any);
+	}
 }

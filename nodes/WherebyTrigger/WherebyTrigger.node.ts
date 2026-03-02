@@ -5,16 +5,16 @@ import {
 	INodeTypeDescription,
 	IDataObject,
 	NodeOperationError,
-	NodeConnectionType,
+	NodeConnectionTypes,
 } from 'n8n-workflow';
 
-import { createHmac } from 'crypto';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 export class WherebyTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Whereby Trigger',
 		name: 'wherebyTrigger',
-		icon: 'file:whereby.svg',
+		icon: 'file:../../icons/whereby.svg',
 		group: ['trigger'],
 		version: 1,
 		subtitle: '={{$parameter["events"].join(", ")}}',
@@ -23,7 +23,7 @@ export class WherebyTrigger implements INodeType {
 			name: 'Whereby Trigger',
 		},
 		inputs: [],
-		outputs: [NodeConnectionType.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [
 			{
 				name: 'wherebyApi',
@@ -48,14 +48,24 @@ export class WherebyTrigger implements INodeType {
 				description: 'The events to listen for',
 				options: [
 					{
+						name: 'Assistant Requested',
+						value: 'assistant.requested',
+						description: 'When a host invites the Whereby Assistant',
+					},
+					{
+						name: 'Recording Finished',
+						value: 'recording.finished',
+						description: 'When recording is completed',
+					},
+					{
 						name: 'Room Client Joined',
 						value: 'room.client.joined',
 						description: 'When a participant joins the meeting',
 					},
 					{
-						name: 'Room Client Left',
-						value: 'room.client.left',
-						description: 'When a participant leaves the meeting',
+						name: 'Room Client Knock Cancelled',
+						value: 'room.client.knockCancelled',
+						description: 'When a visitor cancels their knock',
 					},
 					{
 						name: 'Room Client Knocked',
@@ -63,9 +73,9 @@ export class WherebyTrigger implements INodeType {
 						description: 'When a participant knocks to enter',
 					},
 					{
-						name: 'Room Session Started',
-						value: 'room.session.started',
-						description: 'When a meeting session starts',
+						name: 'Room Client Left',
+						value: 'room.client.left',
+						description: 'When a participant leaves the meeting',
 					},
 					{
 						name: 'Room Session Ended',
@@ -73,14 +83,9 @@ export class WherebyTrigger implements INodeType {
 						description: 'When a meeting session ends',
 					},
 					{
-						name: 'Transcription Started',
-						value: 'transcription.started',
-						description: 'When transcription begins',
-					},
-					{
-						name: 'Transcription Finished',
-						value: 'transcription.finished',
-						description: 'When transcription is completed',
+						name: 'Room Session Started',
+						value: 'room.session.started',
+						description: 'When a meeting session starts',
 					},
 					{
 						name: 'Transcription Failed',
@@ -88,9 +93,14 @@ export class WherebyTrigger implements INodeType {
 						description: 'When transcription fails',
 					},
 					{
-						name: 'Recording Finished',
-						value: 'recording.finished',
-						description: 'When recording is completed',
+						name: 'Transcription Finished',
+						value: 'transcription.finished',
+						description: 'When transcription is completed',
+					},
+					{
+						name: 'Transcription Started',
+						value: 'transcription.started',
+						description: 'When transcription begins',
 					},
 				],
 			},
@@ -117,7 +127,7 @@ export class WherebyTrigger implements INodeType {
 						name: 'validateSignature',
 						type: 'boolean',
 						default: true,
-						description: 'Whether to validate the Whereby signature for security',
+						description: 'Whether to validate the Whereby webhook signature for security',
 					},
 					{
 						displayName: 'Signature Secret',
@@ -127,7 +137,19 @@ export class WherebyTrigger implements INodeType {
 							password: true,
 						},
 						default: '',
-						description: 'The webhook signature secret from Whereby dashboard',
+						description: 'The webhook signing secret from Whereby dashboard',
+						displayOptions: {
+							show: {
+								validateSignature: [true],
+							},
+						},
+					},
+					{
+						displayName: 'Max Age Seconds',
+						name: 'maxAgeSeconds',
+						type: 'number',
+						default: 300,
+						description: 'Maximum age of webhook event in seconds to prevent replay attacks',
 						displayOptions: {
 							show: {
 								validateSignature: [true],
@@ -143,17 +165,14 @@ export class WherebyTrigger implements INodeType {
 		const bodyData = this.getBodyData() as IDataObject;
 		const headers = this.getHeaderData() as IDataObject;
 		const req = this.getRequestObject();
-		
+
 		const events = this.getNodeParameter('events') as string[];
 		const options = this.getNodeParameter('options', {}) as IDataObject;
 
 		// Check if this event type is one we're listening for
 		const eventType = bodyData.type as string;
 		if (!events.includes(eventType)) {
-			// Return empty to ignore this event
-			return {
-				workflowData: [],
-			};
+			return { workflowData: [] };
 		}
 
 		// Validate signature if enabled
@@ -162,85 +181,70 @@ export class WherebyTrigger implements INodeType {
 			if (!signatureSecret) {
 				throw new NodeOperationError(
 					this.getNode(),
-					'Signature secret is required when signature validation is enabled'
+					'Signature secret is required when signature validation is enabled',
 				);
 			}
 
-			const signature = headers['whereby-signature'] as string;
-			if (!signature) {
+			const signatureHeader = headers['whereby-signature'] as string;
+			if (!signatureHeader) {
 				throw new NodeOperationError(
 					this.getNode(),
-					'Missing Whereby signature header'
+					'Missing Whereby-Signature header',
 				);
 			}
 
-			// Whereby uses HMAC-SHA256 for signatures
-			const body = JSON.stringify(bodyData);
+			// Parse header: t=<timestamp>,v1=<signature>
+			const parts: Record<string, string> = {};
+			for (const part of signatureHeader.split(',')) {
+				const [key, ...valueParts] = part.split('=');
+				parts[key] = valueParts.join('=');
+			}
+
+			const timestamp = parts['t'];
+			const receivedSignature = parts['v1'];
+
+			if (!timestamp || !receivedSignature) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Invalid Whereby-Signature header format',
+				);
+			}
+
+			// Replay attack protection
+			const maxAgeSeconds = (options.maxAgeSeconds as number) || 300;
+			const eventAge = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
+			if (isNaN(eventAge) || eventAge > maxAgeSeconds) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Webhook event is too old (possible replay attack)',
+				);
+			}
+
+			// Compute expected signature: HMAC-SHA256 of "timestamp.rawBody"
+			const rawBody = (req as any).rawBody?.toString() || JSON.stringify(bodyData);
+			const signedPayload = `${timestamp}.${rawBody}`;
 			const expectedSignature = createHmac('sha256', signatureSecret)
-				.update(body)
+				.update(signedPayload)
 				.digest('hex');
 
-			// Compare signatures
-			const signatureParts = signature.split('=');
-			const receivedSignature = signatureParts[1];
-			
-			if (receivedSignature !== expectedSignature) {
+			// Constant-time comparison
+			const sigBuffer = Buffer.from(receivedSignature, 'hex');
+			const expectedBuffer = Buffer.from(expectedSignature, 'hex');
+
+			if (sigBuffer.length !== expectedBuffer.length || !timingSafeEqual(sigBuffer, expectedBuffer)) {
 				throw new NodeOperationError(
 					this.getNode(),
-					'Invalid webhook signature'
+					'Invalid webhook signature',
 				);
 			}
 		}
 
-		// Extract common fields
-		const webhookData: IDataObject = {
-			id: bodyData.id,
-			type: bodyData.type,
-			apiVersion: bodyData.apiVersion,
-			createdAt: bodyData.createdAt,
-			data: bodyData.data,
-		};
-
-		// Add event-specific data
-		const eventData = bodyData.data as IDataObject;
-		switch (eventType) {
-			case 'room.client.joined':
-			case 'room.client.left':
-			case 'room.client.knocked':
-				webhookData.displayName = eventData.displayName;
-				webhookData.roomName = eventData.roomName;
-				webhookData.meetingId = eventData.meetingId;
-				break;
-			
-			case 'room.session.started':
-			case 'room.session.ended':
-				webhookData.roomName = eventData.roomName;
-				webhookData.meetingId = eventData.meetingId;
-				webhookData.sessionId = eventData.sessionId;
-				break;
-			
-			case 'recording.finished':
-				webhookData.recordingId = eventData.recordingId;
-				webhookData.roomName = eventData.roomName;
-				webhookData.meetingId = eventData.meetingId;
-				webhookData.duration = eventData.duration;
-				break;
-			
-			case 'transcription.started':
-			case 'transcription.finished':
-			case 'transcription.failed':
-				webhookData.transcriptionId = eventData.transcriptionId;
-				webhookData.roomName = eventData.roomName;
-				webhookData.meetingId = eventData.meetingId;
-				break;
-		}
-
+		// Pass through the full webhook body — user can filter in subsequent nodes
 		return {
 			workflowData: [
 				[
 					{
-						json: webhookData,
-						headers,
+						json: bodyData,
 					},
 				],
 			],
