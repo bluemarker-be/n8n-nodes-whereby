@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1] - 2026-03-02
+
+### Fixed
+- **Meeting create: recording destination** — added destination provider (whereby/s3), file format (mkv/mp4), and S3 storage fields (bucket, accessKeyId, accessKeySecret, oidcRoleArn)
+- **Meeting create: transcription destination** — added destination provider (whereby/s3) and S3 storage fields (bucket, region, accessKeyId, accessKeySecret, oidcRoleArn)
+- **Meeting create: streaming destination** — added RTMP URL field
+- **Webhook trigger** — removed unnecessary "Webhook URL Info" notice
+
 ## [2.0.0] - 2026-03-02
 
 ### Breaking Changes
