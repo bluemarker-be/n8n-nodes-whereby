@@ -121,17 +121,31 @@ export class Whereby implements INodeType {
 						if (Object.keys(recordingSettings).length > 0) {
 							body.recording = {
 								type: recordingSettings.type || 'none',
-								destination: null,
-							};
-							if (recordingSettings.type && recordingSettings.type !== 'none') {
-								body.recording.startTrigger = recordingSettings.startTrigger || null;
+							} as any;
+							if (recordingSettings.startTrigger) {
+								body.recording.startTrigger = recordingSettings.startTrigger;
+							}
+							if (recordingSettings.destinationProvider) {
+								const dest: any = { provider: recordingSettings.destinationProvider };
+								if (recordingSettings.destinationFileFormat) dest.fileFormat = recordingSettings.destinationFileFormat;
+								if (recordingSettings.destinationProvider === 's3') {
+									if (recordingSettings.destinationOidcRoleArn) {
+										dest.oidcRoleArn = recordingSettings.destinationOidcRoleArn;
+									} else {
+										dest.authenticationType = 'accessKey';
+									}
+									if (recordingSettings.destinationBucket) dest.bucket = recordingSettings.destinationBucket;
+									if (recordingSettings.destinationAccessKeyId) dest.accessKeyId = recordingSettings.destinationAccessKeyId;
+									if (recordingSettings.destinationAccessKeySecret) dest.accessKeySecret = recordingSettings.destinationAccessKeySecret;
+								}
+								body.recording.destination = dest;
 							}
 						}
 
 						if (Object.keys(liveTranscriptionSettings).length > 0) {
-							body.liveTranscription = { destination: null };
+							body.liveTranscription = {} as any;
 							if (liveTranscriptionSettings.startTrigger) {
-								body.liveTranscription.startTrigger = liveTranscriptionSettings.startTrigger === '' ? null : liveTranscriptionSettings.startTrigger;
+								body.liveTranscription.startTrigger = liveTranscriptionSettings.startTrigger;
 							}
 							if (liveTranscriptionSettings.language) {
 								body.liveTranscription.language = liveTranscriptionSettings.language;
@@ -139,12 +153,30 @@ export class Whereby implements INodeType {
 							if (liveTranscriptionSettings.liveCaptions !== undefined) {
 								body.liveTranscription.liveCaptions = liveTranscriptionSettings.liveCaptions;
 							}
+							if (liveTranscriptionSettings.destinationProvider) {
+								const dest: any = { provider: liveTranscriptionSettings.destinationProvider };
+								if (liveTranscriptionSettings.destinationProvider === 's3') {
+									if (liveTranscriptionSettings.destinationOidcRoleArn) {
+										dest.oidcRoleArn = liveTranscriptionSettings.destinationOidcRoleArn;
+									} else {
+										dest.authenticationType = 'accessKey';
+									}
+									if (liveTranscriptionSettings.destinationBucket) dest.bucket = liveTranscriptionSettings.destinationBucket;
+									if (liveTranscriptionSettings.destinationRegion) dest.region = liveTranscriptionSettings.destinationRegion;
+									if (liveTranscriptionSettings.destinationAccessKeyId) dest.accessKeyId = liveTranscriptionSettings.destinationAccessKeyId;
+									if (liveTranscriptionSettings.destinationAccessKeySecret) dest.accessKeySecret = liveTranscriptionSettings.destinationAccessKeySecret;
+								}
+								body.liveTranscription.destination = dest;
+							}
 						}
 
 						if (Object.keys(streamingSettings).length > 0) {
-							body.streaming = { destination: null };
+							body.streaming = {} as any;
 							if (streamingSettings.startTrigger) {
-								body.streaming.startTrigger = streamingSettings.startTrigger === '' ? null : streamingSettings.startTrigger;
+								body.streaming.startTrigger = streamingSettings.startTrigger;
+							}
+							if (streamingSettings.destinationUrl) {
+								body.streaming.destination = { url: streamingSettings.destinationUrl };
 							}
 						}
 

@@ -210,7 +210,7 @@ export const meetingFields: INodeProperties[] = [
 					{
 						name: 'Cloud',
 						value: 'cloud',
-						description: 'Cloud recording stored in Whereby',
+						description: 'Cloud recording stored by provider',
 					},
 				],
 				default: 'none',
@@ -221,11 +221,6 @@ export const meetingFields: INodeProperties[] = [
 				name: 'startTrigger',
 				type: 'options',
 				options: [
-					{
-						name: 'Use Organization Default',
-						value: '',
-						description: 'Use organization default settings',
-					},
 					{
 						name: 'None',
 						value: 'none',
@@ -247,13 +242,75 @@ export const meetingFields: INodeProperties[] = [
 						description: 'Start automatically when second participant joins',
 					},
 				],
-				default: '',
+				default: 'none',
 				description: 'When to start recording',
-				displayOptions: {
-					show: {
-						type: ['local', 'cloud'],
+			},
+			{
+				displayName: 'Destination Provider',
+				name: 'destinationProvider',
+				type: 'options',
+				options: [
+					{
+						name: 'Whereby',
+						value: 'whereby',
+						description: 'Store recordings in Whereby-provided storage',
 					},
+					{
+						name: 'Amazon S3',
+						value: 's3',
+						description: 'Store recordings in your own S3 bucket',
+					},
+				],
+				default: 'whereby',
+				description: 'Where to store recordings',
+			},
+			{
+				displayName: 'File Format',
+				name: 'destinationFileFormat',
+				type: 'options',
+				options: [
+					{
+						name: 'MKV',
+						value: 'mkv',
+					},
+					{
+						name: 'MP4',
+						value: 'mp4',
+					},
+				],
+				default: 'mkv',
+				description: 'Recording file format',
+			},
+			{
+				displayName: 'S3 Bucket',
+				name: 'destinationBucket',
+				type: 'string',
+				default: '',
+				description: 'The S3 bucket name for storing recordings',
+			},
+			{
+				displayName: 'S3 Access Key ID',
+				name: 'destinationAccessKeyId',
+				type: 'string',
+				default: '',
+				description: 'AWS access key ID for S3 authentication',
+			},
+			{
+				displayName: 'S3 Access Key Secret',
+				name: 'destinationAccessKeySecret',
+				type: 'string',
+				typeOptions: {
+					password: true,
 				},
+				default: '',
+				description: 'AWS secret access key for S3 authentication',
+			},
+			{
+				displayName: 'S3 OIDC Role ARN',
+				name: 'destinationOidcRoleArn',
+				type: 'string',
+				default: '',
+				description: 'OIDC role ARN for S3 authentication (alternative to access keys)',
 			},
 		],
 	},
@@ -277,11 +334,6 @@ export const meetingFields: INodeProperties[] = [
 				type: 'options',
 				options: [
 					{
-						name: 'Use Organization Default',
-						value: '',
-						description: 'Use organization default settings',
-					},
-					{
 						name: 'None',
 						value: 'none',
 						description: 'Transcription not available',
@@ -302,7 +354,7 @@ export const meetingFields: INodeProperties[] = [
 						description: 'Start automatically when second participant joins',
 					},
 				],
-				default: '',
+				default: 'none',
 				description: 'When to start live transcription',
 			},
 			{
@@ -344,11 +396,6 @@ export const meetingFields: INodeProperties[] = [
 				],
 				default: 'en',
 				description: 'Language for transcription',
-				displayOptions: {
-					show: {
-						startTrigger: ['manual', 'automatic', 'automatic-2nd-participant'],
-					},
-				},
 			},
 			{
 				displayName: 'Live Captions',
@@ -356,11 +403,63 @@ export const meetingFields: INodeProperties[] = [
 				type: 'boolean',
 				default: false,
 				description: 'Whether to enable live captions during the meeting',
-				displayOptions: {
-					show: {
-						startTrigger: ['manual', 'automatic', 'automatic-2nd-participant'],
+			},
+			{
+				displayName: 'Destination Provider',
+				name: 'destinationProvider',
+				type: 'options',
+				options: [
+					{
+						name: 'Whereby',
+						value: 'whereby',
+						description: 'Store transcriptions in Whereby-provided storage',
 					},
+					{
+						name: 'Amazon S3',
+						value: 's3',
+						description: 'Store transcriptions in your own S3 bucket',
+					},
+				],
+				default: 'whereby',
+				description: 'Where to store transcriptions',
+			},
+			{
+				displayName: 'S3 Bucket',
+				name: 'destinationBucket',
+				type: 'string',
+				default: '',
+				description: 'The S3 bucket name for storing transcriptions',
+			},
+			{
+				displayName: 'S3 Region',
+				name: 'destinationRegion',
+				type: 'string',
+				default: '',
+				description: 'AWS region for the S3 bucket',
+			},
+			{
+				displayName: 'S3 Access Key ID',
+				name: 'destinationAccessKeyId',
+				type: 'string',
+				default: '',
+				description: 'AWS access key ID for S3 authentication',
+			},
+			{
+				displayName: 'S3 Access Key Secret',
+				name: 'destinationAccessKeySecret',
+				type: 'string',
+				typeOptions: {
+					password: true,
 				},
+				default: '',
+				description: 'AWS secret access key for S3 authentication',
+			},
+			{
+				displayName: 'S3 OIDC Role ARN',
+				name: 'destinationOidcRoleArn',
+				type: 'string',
+				default: '',
+				description: 'OIDC role ARN for S3 authentication (alternative to access keys)',
 			},
 		],
 	},
@@ -384,11 +483,6 @@ export const meetingFields: INodeProperties[] = [
 				type: 'options',
 				options: [
 					{
-						name: 'Use Organization Default',
-						value: '',
-						description: 'Use organization default settings',
-					},
-					{
 						name: 'None',
 						value: 'none',
 						description: 'Start/stop streaming manually',
@@ -404,8 +498,15 @@ export const meetingFields: INodeProperties[] = [
 						description: 'Start automatically when first participant joins',
 					},
 				],
-				default: '',
+				default: 'none',
 				description: 'When to start streaming',
+			},
+			{
+				displayName: 'RTMP URL',
+				name: 'destinationUrl',
+				type: 'string',
+				default: '',
+				description: 'The RTMP URL for the live stream destination (including stream key)',
 			},
 		],
 	},

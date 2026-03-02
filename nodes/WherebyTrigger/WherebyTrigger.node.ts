@@ -105,17 +105,6 @@ export class WherebyTrigger implements INodeType {
 				],
 			},
 			{
-				displayName: 'Webhook URL Info',
-				name: 'webhookNotice',
-				type: 'notice',
-				default: 'Configure this webhook URL in your Whereby dashboard: Settings → Webhooks → Add webhook endpoint',
-				displayOptions: {
-					show: {
-						'@version': [1],
-					},
-				},
-			},
-			{
 				displayName: 'Options',
 				name: 'options',
 				type: 'collection',
