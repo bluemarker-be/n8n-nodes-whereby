@@ -11,7 +11,7 @@
     "api"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/henkdeblauw/n8n-nodes-whereby",
+  "homepage": "https://github.com/operative-bv/n8n-nodes-whereby",
   "author": {
     "name": "Henk de Blauw",
     "email": "henk@operative.pro",
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/henkdeblauw/n8n-nodes-whereby.git"
+    "url": "git+https://github.com/operative-bv/n8n-nodes-whereby.git"
   },
   "main": "index.js",
   "scripts": {
