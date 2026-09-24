@@ -1,6 +1,6 @@
 {
   "name": "@bluemarker/n8n-nodes-whereby",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "n8n community node for Whereby video conferencing API",
   "keywords": [
     "n8n-community-node-package",

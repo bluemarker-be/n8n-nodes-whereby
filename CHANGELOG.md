@@ -1,9 +1,13 @@
 # Changelog
 
+## [2.0.4] - 2026-09-24
+
+Identical to 2.0.3 — accidental re-publish during the migration flow. Use 2.0.4 or later; nothing broken in 2.0.3.
+
 ## [2.0.3] - 2026-09-24
 
 ### Changed
-- **Repository metadata**: updated `homepage` and `repository.url` to `github.com/bluemarker-be/n8n-nodes-whereby`.
+- **Repository metadata**: updated `homepage`, `repository.url`, and `author` to reflect the move to Blue Marker (`github.com/bluemarker-be/n8n-nodes-whereby`).
 
 ## [2.0.2] - 2026-09-24
 
