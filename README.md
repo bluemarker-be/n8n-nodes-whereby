@@ -1,6 +1,8 @@
-# n8n-nodes-whereby
+# @bluemarker/n8n-nodes-whereby
 
 n8n community node for the [Whereby](https://whereby.com) video conferencing API. Covers the full Whereby REST API including meetings, recordings, transcriptions, summaries, insights, and room theming.
+
+> **Note**: This package was previously published as `n8n-nodes-whereby`. Install as `@bluemarker/n8n-nodes-whereby` in n8n's community nodes settings.
 
 ## Resources & Operations
 

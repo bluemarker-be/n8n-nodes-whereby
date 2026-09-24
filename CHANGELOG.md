@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.0.3] - 2026-09-24
+
+### Changed
+- **Repository metadata**: updated `homepage` and `repository.url` to `github.com/bluemarker-be/n8n-nodes-whereby`.
+
+## [2.0.2] - 2026-09-24
+
+### Changed
+- **Package moved to organization scope**: `n8n-nodes-whereby` → `@bluemarker/n8n-nodes-whereby`. Old package is deprecated. To migrate, uninstall the old community node in n8n and install `@bluemarker/n8n-nodes-whereby`.
+
 ## [2.0.1] - 2026-03-02
 
 ### Fixed
