@@ -27,7 +27,7 @@ export class WherebyTrigger implements INodeType {
 		credentials: [
 			{
 				name: 'wherebyApi',
-				required: true,
+				required: false,
 			},
 		],
 		webhooks: [
@@ -137,7 +137,7 @@ export class WherebyTrigger implements INodeType {
 						displayName: 'Max Age Seconds',
 						name: 'maxAgeSeconds',
 						type: 'number',
-						default: 300,
+						default: 60,
 						description: 'Maximum age of webhook event in seconds to prevent replay attacks',
 						displayOptions: {
 							show: {
@@ -158,13 +158,8 @@ export class WherebyTrigger implements INodeType {
 		const events = this.getNodeParameter('events') as string[];
 		const options = this.getNodeParameter('options', {}) as IDataObject;
 
-		// Check if this event type is one we're listening for
-		const eventType = bodyData.type as string;
-		if (!events.includes(eventType)) {
-			return { workflowData: [] };
-		}
-
-		// Validate signature if enabled
+		// Validate signature FIRST (before any filtering) so unsigned/forged requests
+		// cannot probe which event types this node subscribes to.
 		if (options.validateSignature) {
 			const signatureSecret = options.signatureSecret as string;
 			if (!signatureSecret) {
@@ -199,19 +194,30 @@ export class WherebyTrigger implements INodeType {
 				);
 			}
 
-			// Replay attack protection
-			const maxAgeSeconds = (options.maxAgeSeconds as number) || 300;
+			// Replay-attack protection. Math.abs guards against negative clock skew
+			// (receiver clock behind sender) — otherwise a huge negative age would
+			// silently pass the `> maxAgeSeconds` check.
+			const maxAgeSeconds = (options.maxAgeSeconds as number) || 60;
 			const eventAge = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
-			if (isNaN(eventAge) || eventAge > maxAgeSeconds) {
+			if (isNaN(eventAge) || Math.abs(eventAge) > maxAgeSeconds) {
 				throw new NodeOperationError(
 					this.getNode(),
 					'Webhook event is too old (possible replay attack)',
 				);
 			}
 
-			// Compute expected signature: HMAC-SHA256 of "timestamp.rawBody"
-			const rawBody = (req as any).rawBody?.toString() || JSON.stringify(bodyData);
-			const signedPayload = `${timestamp}.${rawBody}`;
+			// The signed payload is `<timestamp>.<raw request bytes>`. n8n does not
+			// preserve the raw body by default, so we require it explicitly — a
+			// re-serialised body (JSON.stringify) reorders keys/whitespace and would
+			// produce false-negative signature failures on valid deliveries.
+			const rawBody = (req as { rawBody?: Buffer }).rawBody;
+			if (!rawBody || rawBody.length === 0) {
+				throw new NodeOperationError(
+					this.getNode(),
+					'Raw request body is not available; cannot verify signature. Ensure the n8n webhook preserves the raw body.',
+				);
+			}
+			const signedPayload = `${timestamp}.${rawBody.toString('utf8')}`;
 			const expectedSignature = createHmac('sha256', signatureSecret)
 				.update(signedPayload)
 				.digest('hex');
@@ -226,6 +232,12 @@ export class WherebyTrigger implements INodeType {
 					'Invalid webhook signature',
 				);
 			}
+		}
+
+		// After signature verification, filter by subscribed event type.
+		const eventType = bodyData.type as string;
+		if (!events.includes(eventType)) {
+			return { workflowData: [] };
 		}
 
 		// Pass through the full webhook body — user can filter in subsequent nodes

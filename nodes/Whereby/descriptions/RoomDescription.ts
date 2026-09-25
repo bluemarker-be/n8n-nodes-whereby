@@ -63,6 +63,36 @@ export const roomFields: INodeProperties[] = [
 	//         room: setLogo / setBackground / setKnockPageBackground
 	// ----------------------------------
 	{
+		displayName: 'Source',
+		name: 'source',
+		type: 'options',
+		displayOptions: {
+			show: {
+				resource: ['room'],
+				operation: ['setLogo', 'setBackground', 'setKnockPageBackground'],
+			},
+		},
+		options: [
+			{
+				name: 'Image Upload',
+				value: 'image',
+				description: 'Upload a custom image via multipart/form-data',
+			},
+			{
+				name: 'Preset',
+				value: 'preset',
+				description: 'Use a Whereby-provided palette + theme (background & knock page only)',
+			},
+			{
+				name: 'Reset to Default',
+				value: 'reset',
+				description: 'Reset to the default (logo only)',
+			},
+		],
+		default: 'image',
+		description: 'Where to source the image from',
+	},
+	{
 		displayName: 'Binary Property',
 		name: 'binaryPropertyName',
 		type: 'string',
@@ -70,11 +100,52 @@ export const roomFields: INodeProperties[] = [
 			show: {
 				resource: ['room'],
 				operation: ['setLogo', 'setBackground', 'setKnockPageBackground'],
+				source: ['image'],
 			},
 		},
 		default: 'data',
 		required: true,
-		description: 'The name of the binary property containing the image file (PNG)',
+		description: 'The binary property containing the image. Recommended: PNG, at least 1400px wide for backgrounds and 400px for logos, max 600 kb.',
+	},
+	{
+		displayName: 'Palette',
+		name: 'palette',
+		type: 'options',
+		displayOptions: {
+			show: {
+				resource: ['room'],
+				operation: ['setBackground', 'setKnockPageBackground'],
+				source: ['preset'],
+			},
+		},
+		options: [
+			{ name: 'Default', value: 'default' },
+			{ name: 'Grey', value: 'grey' },
+			{ name: 'Purple', value: 'purple' },
+			{ name: 'Burgund', value: 'burgund' },
+		],
+		default: 'default',
+		description: 'The Whereby-provided background color palette',
+	},
+	{
+		displayName: 'Theme',
+		name: 'theme',
+		type: 'options',
+		displayOptions: {
+			show: {
+				resource: ['room'],
+				operation: ['setBackground', 'setKnockPageBackground'],
+				source: ['preset'],
+			},
+		},
+		options: [
+			{ name: 'Default', value: 'default' },
+			{ name: 'Mountains', value: 'mountains' },
+			{ name: 'Characters', value: 'characters' },
+			{ name: 'Rocks', value: 'rocks' },
+		],
+		default: 'default',
+		description: 'The Whereby-provided background theme',
 	},
 
 	// ----------------------------------
@@ -121,24 +192,24 @@ export const roomFields: INodeProperties[] = [
 		options: [
 			{
 				displayName: 'Primary Color',
-				name: 'primaryColor',
+				name: 'primary',
 				type: 'color',
 				default: '#1a73e8',
-				description: 'The primary brand color',
+				description: 'The primary brand color (6-digit hex)',
 			},
 			{
 				displayName: 'Secondary Color',
-				name: 'secondaryColor',
+				name: 'secondary',
 				type: 'color',
 				default: '#ffffff',
-				description: 'The secondary color',
+				description: 'The secondary color (6-digit hex)',
 			},
 			{
 				displayName: 'Focus Color',
-				name: 'focusColor',
+				name: 'focus',
 				type: 'color',
 				default: '#1a73e8',
-				description: 'The focus/accent color',
+				description: 'The focus/accent color (6-digit hex)',
 			},
 		],
 	},

@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.1.0] - 2026-09-25
+
+### Fixed (correctness bugs verified against the Whereby OpenAPI spec)
+
+- **Meeting create — S3 role-based auth**: recording and live-transcription destinations now send `authenticationType: "roleBased"` when an OIDC role ARN is supplied. Previously the field was omitted, so OIDC configs were silently rejected by the API.
+- **Insight get rooms — filter shapes**: `roomName` and `createdAt` are now sent as OpenAPI deep-object query params (`roomName[contains]`, `createdAt[from]`, `createdAt[to]`) instead of flat scalars. Previously the filters had no effect — the API silently ignored the unknown parameter names.
+- **Room set colors — request body**: color tokens are now nested under `tokens.colors` and use the spec's field names (`primary`, `secondary`, `focus`) instead of `primaryColor`/`secondaryColor`/`focusColor`. Previously custom colors were silently discarded.
+- **Room theming — multipart uploads**: `wherebyApiRequestMultipart` now uses the request library's `formData` shape so the boundary parameter is generated automatically, instead of setting `Content-Type: multipart/form-data` by hand.
+- **Webhook trigger — signature verification**: raw request body is required (no more `JSON.stringify(bodyData)` fallback that produced false-negative signature failures). Signature is verified *before* the event-type filter, so unsigned or forged requests can no longer probe which events the node subscribes to.
+- **Webhook trigger — replay window**: default `maxAgeSeconds` reduced from 300 s to 60 s (matches Whereby's own recommendation); a `Math.abs` guard also prevents a receiver clock running behind the sender from silently bypassing the check.
+- **Meeting create — partial-object guard**: opening the Recording, Live Transcription, or Streaming collection without setting all required sub-fields (per the spec's `required[]`) now throws a clear `NodeOperationError` instead of sending an invalid partial object.
+- **Insight get participant details**: the endpoint returns an array; the node now emits one n8n item per participant instead of wrapping the whole array in a single item.
+
+### Added
+
+- **Room theming — preset variants**: new `Source` option on Set Logo, Set Background, and Set Knock Page Background. Choose `Preset` (Set Background / Set Knock Page Background) for Whereby-provided palette + theme combinations, or `Reset to Default` (Set Logo) to restore the default logo without uploading a file.
+- **Insight get rooms — room-name match type**: choose between `contains` (default), `startsWith`, and `exact`.
+- **Insight get participants — sort by**: replaced free-text with a typed dropdown of the four spec-valid combinations (`joinedAt:asc`, `joinedAt:desc`, `leftAt:asc`, `leftAt:desc`).
+- **Room theming — description hints**: binary property description now mentions the 1400 px / 400 px / 600 kb recommendations.
+- **Webhook trigger — credential requirement**: the `wherebyApi` credential is now marked optional on the trigger node (webhooks authenticate via the signing secret, not the API key).
+
+### Breaking Changes
+
+- **Room set colors** — UI field names changed from `primaryColor`/`secondaryColor`/`focusColor` to `primary`/`secondary`/`focus` to match the OpenAPI schema. Existing nodes referencing the old names by expression need to be updated. The custom-color path previously produced no visible effect at all, so most users will experience this as "colors finally work" rather than a regression.
+
+### Chore
+
+- Author `website` field renamed to `url` (matches npm's package metadata field).
+
 ## [2.0.4] - 2026-09-24
 
 Identical to 2.0.3 — accidental re-publish during the migration flow. Use 2.0.4 or later; nothing broken in 2.0.3.

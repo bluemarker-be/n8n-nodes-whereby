@@ -4,6 +4,7 @@ import {
 	INodeType,
 	INodeTypeDescription,
 	NodeConnectionTypes,
+	NodeOperationError,
 } from 'n8n-workflow';
 
 import {
@@ -130,6 +131,7 @@ export class Whereby implements INodeType {
 								if (recordingSettings.destinationFileFormat) dest.fileFormat = recordingSettings.destinationFileFormat;
 								if (recordingSettings.destinationProvider === 's3') {
 									if (recordingSettings.destinationOidcRoleArn) {
+										dest.authenticationType = 'roleBased';
 										dest.oidcRoleArn = recordingSettings.destinationOidcRoleArn;
 									} else {
 										dest.authenticationType = 'accessKey';
@@ -139,6 +141,13 @@ export class Whereby implements INodeType {
 									if (recordingSettings.destinationAccessKeySecret) dest.accessKeySecret = recordingSettings.destinationAccessKeySecret;
 								}
 								body.recording.destination = dest;
+							}
+							if (!body.recording.type || !body.recording.startTrigger || !body.recording.destination) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Recording settings require Type, Start Trigger, and Destination Provider to all be set.',
+									{ itemIndex: i },
+								);
 							}
 						}
 
@@ -157,6 +166,7 @@ export class Whereby implements INodeType {
 								const dest: any = { provider: liveTranscriptionSettings.destinationProvider };
 								if (liveTranscriptionSettings.destinationProvider === 's3') {
 									if (liveTranscriptionSettings.destinationOidcRoleArn) {
+										dest.authenticationType = 'roleBased';
 										dest.oidcRoleArn = liveTranscriptionSettings.destinationOidcRoleArn;
 									} else {
 										dest.authenticationType = 'accessKey';
@@ -168,6 +178,13 @@ export class Whereby implements INodeType {
 								}
 								body.liveTranscription.destination = dest;
 							}
+							if (!body.liveTranscription.startTrigger || !body.liveTranscription.destination) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Live Transcription settings require Start Trigger and Destination Provider to both be set.',
+									{ itemIndex: i },
+								);
+							}
 						}
 
 						if (Object.keys(streamingSettings).length > 0) {
@@ -177,6 +194,13 @@ export class Whereby implements INodeType {
 							}
 							if (streamingSettings.destinationUrl) {
 								body.streaming.destination = { url: streamingSettings.destinationUrl };
+							}
+							if (!body.streaming.startTrigger || !body.streaming.destination) {
+								throw new NodeOperationError(
+									this.getNode(),
+									'Streaming settings require Start Trigger and Destination URL to both be set.',
+									{ itemIndex: i },
+								);
 							}
 						}
 
@@ -390,9 +414,12 @@ export class Whereby implements INodeType {
 						const returnAll = this.getNodeParameter('returnAll', i) as boolean;
 						const filters = this.getNodeParameter('filters', i, {}) as any;
 						const qs: any = {};
-						if (filters.roomName) qs.roomName = filters.roomName;
-						if (filters.createdAfter) qs.createdAfter = filters.createdAfter;
-						if (filters.createdBefore) qs.createdBefore = filters.createdBefore;
+						if (filters.roomName) {
+							const matchOp = (filters.roomNameMatch as string) || 'contains';
+							qs[`roomName[${matchOp}]`] = filters.roomName;
+						}
+						if (filters.createdAfter) qs['createdAt[from]'] = filters.createdAfter;
+						if (filters.createdBefore) qs['createdAt[to]'] = filters.createdBefore;
 						if (filters.sortBy) qs.sortBy = filters.sortBy;
 
 						if (returnAll) {
@@ -456,7 +483,8 @@ export class Whereby implements INodeType {
 						const participantId = this.getNodeParameter('participantId', i) as string;
 						const qs = { roomSessionId, participantId };
 						const responseData = await wherebyApiRequest.call(this, 'GET', '/v1/insights/participant', {}, qs);
-						returnData.push({ json: responseData, pairedItem: { item: i } });
+						const rows = Array.isArray(responseData) ? responseData : [responseData];
+						returnData.push(...rows.map((item: any) => ({ json: item, pairedItem: { item: i } })));
 					}
 				}
 
@@ -467,26 +495,75 @@ export class Whereby implements INodeType {
 					const roomName = this.getNodeParameter('roomName', i) as string;
 
 					if (operation === 'setLogo') {
-						const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
-						const responseData = await wherebyApiRequestMultipart.call(
-							this, 'PUT', `/v1/rooms/${roomName}/theme/logo`, binaryPropertyName, i,
-						);
+						const source = this.getNodeParameter('source', i, 'image') as string;
+						if (source === 'preset') {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Preset source is not supported for Set Logo. Choose "Image Upload" or "Reset to Default".',
+								{ itemIndex: i },
+							);
+						}
+						let responseData;
+						if (source === 'reset') {
+							responseData = await wherebyApiRequest.call(
+								this, 'PUT', `/v1/rooms/${roomName}/theme/logo`, { theme: 'default' },
+							);
+						} else {
+							const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
+							responseData = await wherebyApiRequestMultipart.call(
+								this, 'PUT', `/v1/rooms/${roomName}/theme/logo`, binaryPropertyName, i,
+							);
+						}
 						returnData.push({ json: responseData ?? { success: true }, pairedItem: { item: i } });
 					}
 
 					if (operation === 'setBackground') {
-						const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
-						const responseData = await wherebyApiRequestMultipart.call(
-							this, 'PUT', `/v1/rooms/${roomName}/theme/room-background`, binaryPropertyName, i,
-						);
+						const source = this.getNodeParameter('source', i, 'image') as string;
+						if (source === 'reset') {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Reset source is not supported for Set Background. Choose "Image Upload" or "Preset".',
+								{ itemIndex: i },
+							);
+						}
+						let responseData;
+						if (source === 'preset') {
+							const palette = this.getNodeParameter('palette', i) as string;
+							const theme = this.getNodeParameter('theme', i) as string;
+							responseData = await wherebyApiRequest.call(
+								this, 'PUT', `/v1/rooms/${roomName}/theme/room-background`, { palette, theme },
+							);
+						} else {
+							const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
+							responseData = await wherebyApiRequestMultipart.call(
+								this, 'PUT', `/v1/rooms/${roomName}/theme/room-background`, binaryPropertyName, i,
+							);
+						}
 						returnData.push({ json: responseData ?? { success: true }, pairedItem: { item: i } });
 					}
 
 					if (operation === 'setKnockPageBackground') {
-						const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
-						const responseData = await wherebyApiRequestMultipart.call(
-							this, 'PUT', `/v1/rooms/${roomName}/theme/room-knock-page-background`, binaryPropertyName, i,
-						);
+						const source = this.getNodeParameter('source', i, 'image') as string;
+						if (source === 'reset') {
+							throw new NodeOperationError(
+								this.getNode(),
+								'Reset source is not supported for Set Knock Page Background. Choose "Image Upload" or "Preset".',
+								{ itemIndex: i },
+							);
+						}
+						let responseData;
+						if (source === 'preset') {
+							const palette = this.getNodeParameter('palette', i) as string;
+							const theme = this.getNodeParameter('theme', i) as string;
+							responseData = await wherebyApiRequest.call(
+								this, 'PUT', `/v1/rooms/${roomName}/theme/room-knock-page-background`, { palette, theme },
+							);
+						} else {
+							const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
+							responseData = await wherebyApiRequestMultipart.call(
+								this, 'PUT', `/v1/rooms/${roomName}/theme/room-knock-page-background`, binaryPropertyName, i,
+							);
+						}
 						returnData.push({ json: responseData ?? { success: true }, pairedItem: { item: i } });
 					}
 
@@ -494,9 +571,9 @@ export class Whereby implements INodeType {
 						const tokensPreset = this.getNodeParameter('tokensPreset', i) as string;
 						const body: any = { tokensPreset };
 						if (tokensPreset === 'custom') {
-							const tokens = this.getNodeParameter('tokens', i, {}) as any;
-							if (Object.keys(tokens).length > 0) {
-								body.tokens = tokens;
+							const colors = this.getNodeParameter('tokens', i, {}) as any;
+							if (Object.keys(colors).length > 0) {
+								body.tokens = { colors };
 							}
 						}
 						const responseData = await wherebyApiRequest.call(

@@ -102,10 +102,10 @@ export async function wherebyApiRequestMultipart(
 	const binaryData = this.helpers.assertBinaryData(itemIndex, binaryPropertyName);
 	const dataBuffer = await this.helpers.getBinaryDataBuffer(itemIndex, binaryPropertyName);
 
-	const options: IHttpRequestOptions = {
+	const options: IHttpRequestOptions & { formData?: IDataObject } = {
 		method,
 		url: `https://api.whereby.dev${resource}`,
-		body: {
+		formData: {
 			image: {
 				value: dataBuffer,
 				options: {
@@ -113,9 +113,6 @@ export async function wherebyApiRequestMultipart(
 					contentType: binaryData.mimeType || 'image/png',
 				},
 			},
-		},
-		headers: {
-			'Content-Type': 'multipart/form-data',
 		},
 		json: true,
 	};

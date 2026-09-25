@@ -47,3 +47,7 @@ temp/
 
 # API docs (local reference only)
 whereby-docs/
+whereby-rest-api-openapi.json
+
+# Duplicate node icons (source of truth lives in /icons/)
+nodes/**/whereby.svg

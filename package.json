@@ -1,6 +1,6 @@
 {
   "name": "@bluemarker/n8n-nodes-whereby",
-  "version": "2.0.4",
+  "version": "2.1.0",
   "description": "n8n community node for Whereby video conferencing API",
   "keywords": [
     "n8n-community-node-package",
@@ -15,7 +15,7 @@
   "author": {
     "name": "Henk de Blauw",
     "email": "henk@bluemarker.be",
-    "website": "https://www.bluemarker.be"
+    "url": "https://www.bluemarker.be"
   },
   "repository": {
     "type": "git",
