@@ -1,4 +1,4 @@
-# @bluemarker/n8n-nodes-whereby
+# `@bluemarker/n8n-nodes-whereby`
 
 n8n community node for the [Whereby](https://whereby.com) video conferencing API. Covers the full Whereby REST API including meetings, recordings, transcriptions, summaries, insights, and room theming.
 
